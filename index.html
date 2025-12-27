@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy New Year 2026</title>
+    <style>
+        /* --- CSS Reset & Basics --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Background Canvas for Fireworks --- */
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* --- Adsterra Banner Spaces --- */
+        .ad-space {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.05);
+            min-height: 60px; /* Reserves space for the ad */
+            overflow: hidden;
+        }
+
+        /* --- Main Container --- */
+        .container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 10px;
+        }
+
+        /* --- Dynamic Name Header --- */
+        .wishing-text {
+            font-size: 1.2rem;
+            color: #ffcc00;
+            text-shadow: 0 0 5px #ffcc00;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        /* --- 3D Year Animation --- */
+        .year-container {
+            perspective: 1000px;
+            margin: 30px 0;
+        }
+        
+        .year-3d {
+            font-size: 4rem;
+            font-weight: 900;
+            color: transparent;
+            /* 3D Stroke Effect */
+            -webkit-text-stroke: 2px #00d2ff;
+            background: linear-gradient(90deg, #ff00cc, #333399, #00d2ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            display: inline-block;
+            animation: rotateYear 5s infinite linear;
+            transform-style: preserve-3d;
+            text-shadow: 
+                2px 2px 0px #ff00cc,
+                4px 4px 0px #333399,
+                6px 6px 0px #00d2ff;
+        }
+
+        .happy-text {
+            font-size: 2.5rem;
+            font-family: 'Brush Script MT', cursive;
+            background: linear-gradient(to right, #f8b500, #fceabb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        /* --- Controls & Form --- */
+        .controls {
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            backdrop-filter: blur(5px);
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 12px;
+            border-radius: 25px;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            border: 2px solid #00d2ff;
+            background: #111;
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: transform 0.2s;
+            width: 100%;
+            max-width: 200px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            box-shadow: 0 0 15px #25D366;
+        }
+
+        .btn-music {
+            background: #ff00cc;
+            color: white;
+            margin-bottom: 10px;
+            box-shadow: 0 0 15px #ff00cc;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* --- Footer --- */
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            color: #666;
+            font-size: 0.8rem;
+            z-index: 2;
+        }
+
+        /* --- Animations --- */
+        @keyframes rotateYear {
+            0% { transform: rotateY(0deg) scale(1); }
+            50% { transform: rotateY(15deg) scale(1.1); }
+            100% { transform: rotateY(0deg) scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; text-shadow: 0 0 15px #ffcc00; }
+            100% { opacity: 0.8; }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            .year-3d { font-size: 3rem; }
+            .happy-text { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ad-space" id="ad-top">
+        <script>
+            atOptions = {
+                'key' : 'af6f0f801541033936affcf32364ef7c',
+                'format' : 'iframe',
+                'height' : 50,
+                'width' : 320,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/af6f0f801541033936affcf32364ef7c/invoke.js"></script>
+    </div>
+    <canvas id="canvas"></canvas>
+
+    <div class="container">
+        <h3 class="wishing-text" id="wishing-header">Welcome!</h3>
+
+        <h1 class="happy-text">Happy New Year</h1>
+        
+        <div class="year-container">
+            <div class="year-3d">2026</div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-music" onclick="toggleMusic()" id="musicBtn">Play Music 🎵</button>
+            
+            <p style="margin: 15px 0 5px; font-size: 0.9rem;">Enter your name to wish others:</p>
+            <input type="text" id="userName" placeholder="Your Name...">
+            
+            <button class="btn btn-whatsapp" onclick="shareOnWhatsapp()">Share on WhatsApp 🚀</button>
+        </div>
+    </div>
+
+    <div class="ad-space" id="ad-bottom">
+        <script>
+            atOptions = {
+                'key' : 'af6f0f801541033936affcf32364ef7c',
+                'format' : 'iframe',
+                'height' : 50,
+                'width' : 320,
+                'params' : {}
+            };
+        </script>
+        <script type="text/javascript" src="https://www.highperformanceformat.com/af6f0f801541033936affcf32364ef7c/invoke.js"></script>
+    </div>
+    <footer>
+        &copy; 2026 Celebration Script
+    </footer>
+
+    <audio id="bgMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        /* --- 1. Logic for Name & Sharing --- */
+        
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const senderName = urlParams.get('n');
+
+        // Update the wishing text
+        const wishHeader = document.getElementById('wishing-header');
+        if (senderName) {
+            const safeName = senderName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            wishHeader.innerHTML = `<span style="color:#fff">${safeName}</span> is wishing you:`;
+            document.title = `${safeName} sent you a surprise!`;
+        } else {
+            wishHeader.innerHTML = "Wishing you a...";
+        }
+
+        // WhatsApp Share Function
+        function shareOnWhatsapp() {
+            var name = document.getElementById("userName").value.trim();
+            
+            if(name === "") {
+                alert("Please enter your name first!");
+                document.getElementById("userName").focus();
+                return;
+            }
+
+            var baseUrl = window.location.href.split('?')[0];
+            var finalLink = `${baseUrl}?n=${encodeURIComponent(name)}`;
+            var message = `*${name}* sent you a special 3D Surprise for New Year 2026! 🎆%0A%0A👇 Touch this blue line 👇%0A${finalLink}`;
+            
+            window.open(`whatsapp://send?text=${message}`, '_blank');
+        }
+
+        /* --- 2. Music Logic --- */
+        var music = document.getElementById("bgMusic");
+        var musicBtn = document.getElementById("musicBtn");
+        var isPlaying = false;
+
+        function toggleMusic() {
+            if (isPlaying) {
+                music.pause();
+                musicBtn.innerText = "Play Music 🎵";
+                isPlaying = false;
+            } else {
+                music.play();
+                musicBtn.innerText = "Pause Music ⏸️";
+                isPlaying = true;
+            }
+        }
+
+        /* --- 3. Fireworks Effect --- */
+        window.requestAnimFrame = (function() {
+            return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
+                window.setTimeout(callback, 1000 / 60);
+            };
+        })();
+
+        var canvas = document.getElementById('canvas'),
+            ctx = canvas.getContext('2d'),
+            cw = window.innerWidth,
+            ch = window.innerHeight,
+            fireworks = [],
+            particles = [],
+            hue = 120,
+            limiterTotal = 5,
+            limiterTick = 0,
+            timerTotal = 80,
+            timerTick = 0,
+            mousedown = false,
+            mx, my;
+
+        canvas.width = cw;
+        canvas.height = ch;
+
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        function calculateDistance(p1x, p1y, p2x, p2y) {
+            var xDistance = p1x - p2x, yDistance = p1y - p2y;
+            return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2));
+        }
+
+        function Firework(sx, sy, tx, ty) {
+            this.x = sx; this.y = sy; this.sx = sx; this.sy = sy;
+            this.tx = tx; this.ty = ty;
+            this.distanceToTarget = calculateDistance(sx, sy, tx, ty);
+            this.distanceTraveled = 0;
+            this.coordinates = [];
+            this.coordinateCount = 3;
+            while (this.coordinateCount--) { this.coordinates.push([this.x, this.y]); }
+            this.angle = Math.atan2(ty - sy, tx - sx);
+            this.speed = 2;
+            this.acceleration = 1.05;
+            this.brightness = random(50, 70);
+            this.targetRadius = 1;
+        }
+
+        Firework.prototype.update = function(index) {
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x, this.y]);
+            if (this.targetRadius < 8) { this.targetRadius += 0.3; } else { this.targetRadius = 1; }
+            this.speed *= this.acceleration;
+            var vx = Math.cos(this.angle) * this.speed, vy = Math.sin(this.angle) * this.speed;
+            this.distanceTraveled = calculateDistance(this.sx, this.sy, this.x + vx, this.y + vy);
+            if (this.distanceTraveled >= this.distanceToTarget) {
+                createParticles(this.tx, this.ty);
+                fireworks.splice(index, 1);
+            } else {
+                this.x += vx; this.y += vy;
+            }
+        };
+
+        Firework.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = 'hsl(' + hue + ', 100%, ' + this.brightness + '%)';
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(this.tx, this.ty, this.targetRadius, 0, Math.PI * 2);
+            ctx.stroke();
+        };
+
+        function Particle(x, y) {
+            this.x = x; this.y = y;
+            this.coordinates = [];
+            this.coordinateCount = 5;
+            while (this.coordinateCount--) { this.coordinates.push([this.x, this.y]); }
+            this.angle = random(0, Math.PI * 2);
+            this.speed = random(1, 10);
+            this.friction = 0.95;
+            this.gravity = 1;
+            this.hue = random(hue - 20, hue + 20);
+            this.brightness = random(50, 80);
+            this.alpha = 1;
+            this.decay = random(0.015, 0.03);
+        }
+
+        Particle.prototype.update = function(index) {
+            this.coordinates.pop();
+            this.coordinates.unshift([this.x, this.y]);
+            this.speed *= this.friction;
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed + this.gravity;
+            this.alpha -= this.decay;
+            if (this.alpha <= this.decay) { particles.splice(index, 1); }
+        };
+
+        Particle.prototype.draw = function() {
+            ctx.beginPath();
+            ctx.moveTo(this.coordinates[this.coordinates.length - 1][0], this.coordinates[this.coordinates.length - 1][1]);
+            ctx.lineTo(this.x, this.y);
+            ctx.strokeStyle = 'hsla(' + this.hue + ', 100%, ' + this.brightness + '%, ' + this.alpha + ')';
+            ctx.stroke();
+        };
+
+        function createParticles(x, y) {
+            var particleCount = 30;
+            while (particleCount--) { particles.push(new Particle(x, y)); }
+        }
+
+        function loop() {
+            requestAnimFrame(loop);
+            hue += 0.5;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, cw, ch);
+            ctx.globalCompositeOperation = 'lighter';
+            var i = fireworks.length;
+            while (i--) { fireworks[i].draw(); fireworks[i].update(i); }
+            var i = particles.length;
+            while (i--) { particles[i].draw(); particles[i].update(i); }
+            if (timerTick >= timerTotal) {
+                if (!mousedown) {
+                    fireworks.push(new Firework(cw / 2, ch, random(0, cw), random(0, ch / 2)));
+                    timerTick = 0;
+                }
+            } else { timerTick++; }
+            if (limiterTick >= limiterTotal) {
+                if (mousedown) {
+                    fireworks.push(new Firework(cw / 2, ch, mx, my));
+                    limiterTick = 0;
+                }
+            } else { limiterTick++; }
+        }
+
+        window.onload = loop;
+    </script>
+</body>
+</html>

@@ -1,0 +1,530 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Golden 2026 Celebration</title>
+    <style>
+        /* --- RESET & BASE --- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- 3D CANVAS (Background) --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- UI OVERLAY (Foreground) --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass to 3D */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Pushes ads to edges */
+        }
+
+        /* --- MUSIC TOGGLE --- */
+        #music-control {
+            pointer-events: auto;
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 22px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        #music-control:active { transform: scale(0.9); }
+
+        /* --- AD CONTAINERS (Glass Strips) --- */
+        .ad-strip {
+            pointer-events: auto;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            z-index: 100;
+        }
+        .ad-strip.bottom {
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: none;
+        }
+
+        /* --- INPUT PANEL --- */
+        .side-panel {
+            pointer-events: auto;
+            position: absolute;
+            /* Desktop Position */
+            bottom: 100px; 
+            right: 40px;
+            width: 300px;
+            
+            background: rgba(20, 20, 30, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 90;
+        }
+
+        .side-panel h3 { 
+            margin: 0 0 15px 0; 
+            font-weight: 600; 
+            font-size: 1.3rem; 
+            color: #ffd700; 
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 1rem;
+        }
+        input:focus { border-color: #ffd700; background: rgba(0,0,0,0.6); }
+
+        /* File Input Style */
+        .file-label {
+            display: block;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            border: 1px dashed rgba(255,255,255,0.3);
+            transition: background 0.3s;
+        }
+        .file-label:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+        input[type="file"] { display: none; }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-apply {
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            color: #222;
+            box-shadow: 0 4px 15px rgba(255, 170, 0, 0.3);
+        }
+        .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5); }
+
+        .btn-share {
+            background: #ffffff;
+            color: #333;
+            display: none; /* Hidden by default */
+        }
+        .btn-share:hover { background: #f0f0f0; }
+
+        #status { font-size: 0.8rem; color: #aaa; text-align: center; margin-top: 5px; min-height: 15px;}
+
+        /* --- MOBILE RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            .side-panel {
+                /* Center on mobile */
+                right: 50%;
+                transform: translateX(50%);
+                /* Push up to avoid covering bottom ad */
+                bottom: 85px; 
+                width: 85%;
+                max-width: 350px;
+                padding: 20px;
+            }
+            .side-panel h3 { font-size: 1.1rem; }
+            #music-control { top: 70px; right: 15px; width: 40px; height: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bgMusic" loop>
+        <source src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_1e3e86c073.mp3?filename=upbeat-party-124040.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        
+        <div class="ad-strip top">
+            <script>
+                atOptions = { 'key' : '04160f66b3308e7b2ef3b7cbde435a66', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} };
+            </script>
+            <script src="https://www.highperformanceformat.com/04160f66b3308e7b2ef3b7cbde435a66/invoke.js"></script>
+        </div>
+
+        <div id="music-control" onclick="toggleMusic()">🎵</div>
+
+        <div class="side-panel" id="panel">
+            <h3>Make a Wish ✨</h3>
+            <input type="text" id="inpName" placeholder="Your Name..." maxlength="20">
+            
+            <label for="inpPhoto" class="file-label" id="fileLabel">
+                <span style="font-size:1.2rem">📸</span><br>Add Photo (Optional)
+            </label>
+            <input type="file" id="inpPhoto" accept="image/*">
+
+            <button class="btn-apply" onclick="updateScene()">Generate 3D Wish</button>
+            <button class="btn-share" id="btnShare" onclick="nativeShare()">📤 Share Wish</button>
+            <div id="status"></div>
+        </div>
+
+        
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        /* --------------------------------------------------------
+           1. MUSIC LOGIC (FIXED)
+           -------------------------------------------------------- */
+        window.toggleMusic = function() {
+            const music = document.getElementById('bgMusic');
+            const btn = document.getElementById('music-control');
+            
+            if(music.paused) {
+                // We use a promise to handle play failure (browser blocking)
+                const playPromise = music.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        btn.innerHTML = "🔊"; // Playing icon
+                    })
+                    .catch(error => {
+                        console.log("Audio play failed:", error);
+                        btn.innerHTML = "❌"; // Error icon
+                    });
+                }
+            } else {
+                music.pause();
+                btn.innerHTML = "🔇"; // Mute icon
+            }
+        }
+        
+        // Browsers block audio until a user interacts with the page.
+        // This listener tries to start audio silently on the first click anywhere.
+        document.body.addEventListener('click', () => {
+             const music = document.getElementById('bgMusic');
+             if(music.paused) { 
+                 // Try to play
+                 music.play().then(() => {
+                    document.getElementById('music-control').innerHTML = "🔊";
+                 }).catch((e) => { /* Ignore auto-play errors */ }); 
+             }
+        }, { once: true });
+
+
+        /* --------------------------------------------------------
+           2. 3D SCENE SETUP
+           -------------------------------------------------------- */
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 18);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enablePan = false;
+        controls.maxDistance = 35;
+        controls.minDistance = 10;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+
+        // GLOW EFFECT
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0; bloomPass.strength = 1.2; bloomPass.radius = 0.5;
+        composer.addPass(bloomPass);
+
+        // LIGHTING
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 5, 5);
+        scene.add(dirLight);
+
+
+        /* --------------------------------------------------------
+           3. OBJECTS (Frame, Text, Fireworks)
+           -------------------------------------------------------- */
+        const frameGroup = new THREE.Group();
+        scene.add(frameGroup);
+
+        const borderGeo = new THREE.BoxGeometry(9.2, 12.2, 0.2);
+        const goldMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffd700, metalness: 1, roughness: 0.3, emissive: 0xaa6600, emissiveIntensity: 0.2 
+        });
+        const border = new THREE.Mesh(borderGeo, goldMat);
+        frameGroup.add(border);
+
+        const photoGeo = new THREE.PlaneGeometry(9, 12);
+        
+        // Default Canvas Texture
+        const defCanvas = document.createElement('canvas');
+        defCanvas.width = 512; defCanvas.height = 680;
+        const ctx = defCanvas.getContext('2d');
+        ctx.fillStyle = "#111"; ctx.fillRect(0,0,512,680);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 60px Arial"; ctx.textAlign = "center";
+        ctx.fillText("HAPPY", 256, 300);
+        ctx.fillText("NEW YEAR", 256, 380);
+        const defaultTex = new THREE.CanvasTexture(defCanvas);
+        
+        const photoMat = new THREE.MeshBasicMaterial({ map: defaultTex });
+        const photoPlane = new THREE.Mesh(photoGeo, photoMat);
+        photoPlane.position.z = 0.11;
+        frameGroup.add(photoPlane);
+
+        // TEXT 2026
+        let textGroup = new THREE.Group();
+        scene.add(textGroup);
+        const fontLoader = new FontLoader();
+        let loadedFont = null;
+
+        fontLoader.load('https://threejs.org/examples/fonts/optimer_bold.typeface.json', (font) => {
+            loadedFont = font;
+            const textGeo = new TextGeometry('2026', { font: font, size: 3.5, height: 0.5, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.05 });
+            textGeo.center();
+            const textMesh = new THREE.Mesh(textGeo, goldMat);
+            textMesh.position.set(0, 8, 0);
+            textGroup.add(textMesh);
+
+            const subGeo = new TextGeometry('Happy New Year', { font: font, size: 0.8, height: 0.1 });
+            subGeo.center();
+            const subMesh = new THREE.Mesh(subGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 }));
+            subMesh.position.set(0, -8, 0);
+            textGroup.add(subMesh);
+        });
+
+        // FIREWORKS
+        const fireworks = [];
+        function createFirework() {
+            const x = (Math.random() - 0.5) * 40;
+            const y = (Math.random() - 0.5) * 20;
+            const z = (Math.random() - 0.5) * 20 - 10;
+            const color = new THREE.Color().setHSL(Math.random(), 1, 0.5);
+            const particleCount = 40 + Math.random() * 40;
+            const positions = [];
+            const velocities = [];
+
+            for(let i=0; i<particleCount; i++){
+                positions.push(x, y, z);
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const speed = 0.2 + Math.random() * 0.3;
+                velocities.push(speed * Math.sin(phi) * Math.cos(theta), speed * Math.sin(phi) * Math.sin(theta), speed * Math.cos(phi));
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const material = new THREE.PointsMaterial({ size: 0.4, color: color, transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+            fireworks.push({ mesh: points, vels: velocities, life: 1.0 });
+        }
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const t = clock.getElapsedTime();
+            frameGroup.position.y = Math.sin(t) * 0.5;
+            textGroup.position.y = Math.sin(t + 1) * 0.5;
+
+            if(Math.random() < 0.04) createFirework();
+
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const fw = fireworks[i];
+                fw.life -= 0.015;
+                fw.mesh.material.opacity = fw.life;
+                const pos = fw.mesh.geometry.attributes.position.array;
+                for(let k=0; k<fw.vels.length/3; k++){
+                    fw.vels[k*3 + 1] -= 0.005; // Gravity
+                    pos[k*3] += fw.vels[k*3];
+                    pos[k*3+1] += fw.vels[k*3+1];
+                    pos[k*3+2] += fw.vels[k*3+2];
+                }
+                fw.mesh.geometry.attributes.position.needsUpdate = true;
+                if(fw.life <= 0){ scene.remove(fw.mesh); fireworks.splice(i, 1); }
+            }
+            composer.render();
+        }
+        animate();
+
+
+        /* --------------------------------------------------------
+           4. UI LOGIC (Form, Upload, Share)
+           -------------------------------------------------------- */
+        
+        // ** PASTE YOUR GOOGLE SCRIPT URL HERE **
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqkakHeJx5zCEC-ij6hWivU7d34X4GeGx-ekH6klWNzypMfntOCtWDB_7CTtu_Z2yNQA/exec"; 
+
+        let base64Img = null;
+
+        document.getElementById('inpPhoto').addEventListener('change', (e) => {
+            if(e.target.files[0]){
+                const f = e.target.files[0];
+                document.getElementById('fileLabel').innerHTML = "✅ Photo Selected";
+                const r = new FileReader();
+                r.onload = (ev) => base64Img = ev.target.result;
+                r.readAsDataURL(f);
+            }
+        });
+
+        window.updateScene = function() {
+            const name = document.getElementById('inpName').value;
+            const status = document.getElementById('status');
+
+            if(!name && !base64Img) {
+                status.innerText = "Please write a name or pick a photo.";
+                status.style.color = "#ff5555";
+                return;
+            }
+
+            status.style.color = "#aaa";
+            status.innerText = "Processing Magic...";
+
+            // Update Photo
+            if(base64Img) {
+                new THREE.TextureLoader().load(base64Img, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    const aspect = tex.image.width / tex.image.height;
+                    photoPlane.scale.set(aspect * (12/9), 1, 1); 
+                    photoPlane.material.map = tex;
+                    photoPlane.material.needsUpdate = true;
+                });
+            }
+
+            // Update Name
+            if(name && loadedFont) {
+                textGroup.children.pop(); // Remove old subtext
+                const nameGeo = new TextGeometry(name, { font: loadedFont, size: 1.2, height: 0.2 });
+                nameGeo.center();
+                const nameMesh = new THREE.Mesh(nameGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00aaff, emissiveIntensity: 0.8 }));
+                nameMesh.position.set(0, -8, 0);
+                textGroup.add(nameMesh);
+            }
+
+            document.getElementById('btnShare').style.display = "block";
+            status.innerText = "Wish Generated!";
+
+            // Backend Upload
+            if(GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL.includes("http")) {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ name: name || "Anonymous", image: base64Img || "No Image" })
+                }).catch(e => console.log("Bg Upload started"));
+            }
+        }
+
+        /* --- 5. NATIVE SHARE FEATURE --- */
+        window.nativeShare = async function() {
+            const name = document.getElementById('inpName').value || "Someone";
+            const shareData = {
+                title: 'New Year Wish 2026',
+                text: `${name} has sent you a special glowing 3D Wish for 2026! ✨\nCheck it out here:`,
+                url: window.location.href
+            };
+
+            // Try Native Share (Mobile)
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.log('Share canceled');
+                }
+            } else {
+                // Fallback for Desktop (Copy to Clipboard)
+                try {
+                    await navigator.clipboard.writeText(shareData.text + " " + shareData.url);
+                    alert("Link copied to clipboard! You can paste it anywhere.");
+                } catch (err) {
+                    alert("Could not copy link. Please copy the URL from the browser bar.");
+                }
+            }
+        }
+
+        // Resize Handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

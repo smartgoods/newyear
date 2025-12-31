@@ -313,15 +313,17 @@
             wishHeader.innerHTML = "Wishing you a...";
         }
 
-        // 1b. Display Incoming Photo (CRITICAL FIX HERE)
+        // 1b. Display Incoming Photo (FOR RECEIVER)
         if (photoId) {
+            displayImageFromDrive(photoId);
+        }
+
+        // Helper function to show image using Proxy
+        function displayImageFromDrive(fileId) {
             photoDisplay.style.display = 'block';
+            // Use wsrv.nl proxy to unblock Drive images
+            photoDisplay.src = `https://wsrv.nl/?url=https://drive.google.com/uc?id=${fileId}`;
             
-            // WE USE 'wsrv.nl' to PROXY the Google Drive Image.
-            // This bypasses the 403 blocks that stop the image from showing.
-            photoDisplay.src = `https://wsrv.nl/?url=https://drive.google.com/uc?id=${photoId}`;
-            
-            // If the image fails to load, hide it so we don't show a broken icon
             photoDisplay.onerror = function() {
                 this.style.display = 'none';
                 console.log("Image failed to load via proxy.");
@@ -407,6 +409,11 @@
                         // SUCCESS: Store ID and Change Button
                         uploadedFileId = data.fileId;
                         
+                        // --- THIS IS THE FIX YOU ASKED FOR ---
+                        // Immediately show the image FROM DRIVE to the sender
+                        displayImageFromDrive(uploadedFileId); 
+                        // -------------------------------------
+
                         shareBtn.innerText = "Open WhatsApp Now 📲";
                         shareBtn.style.background = "#25D366"; // WhatsApp Green
                         shareBtn.disabled = false;

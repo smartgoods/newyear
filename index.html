@@ -16,22 +16,31 @@
 
         /* --- ADS --- */
         .ad-strip { pointer-events: auto; width: 100%; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 100; }
-        .ad-strip.bottom { border-top: 1px solid rgba(255,255,255,0.05); border-bottom: none; }
-
-        /* --- PANEL (TRANSPARENT) --- */
+        
+        /* --- PANEL (CENTERED AT BOTTOM) --- */
         .side-panel { 
             pointer-events: auto; 
             position: absolute; 
-            bottom: 100px; 
-            right: 40px; 
-            width: 300px; 
+            
+            /* Center at Bottom */
+            bottom: 60px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+
+            /* Transparent Style */
             background: rgba(0, 0, 0, 0.0); 
             backdrop-filter: none; 
             border: none;
             box-shadow: none;
+            
             color: white; 
             transition: all 0.4s; 
             z-index: 90; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .side-panel h3 { 
@@ -43,12 +52,13 @@
             text-transform: uppercase; 
             letter-spacing: 1px; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            width: 100%;
         }
         
         input { width: 100%; padding: 12px; margin-bottom: 12px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 10px; box-sizing: border-box; outline: none; font-size: 1rem; backdrop-filter: blur(4px); }
         input:focus { border-color: #ffd700; background: rgba(0,0,0,0.8); }
 
-        .file-label { display: block; padding: 12px; background: rgba(0,0,0,0.6); border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; cursor: pointer; text-align: center; border: 1px dashed rgba(255,255,255,0.4); transition: background 0.3s; backdrop-filter: blur(4px); }
+        .file-label { width: 100%; display: block; padding: 12px; background: rgba(0,0,0,0.6); border-radius: 10px; margin-bottom: 20px; font-size: 0.9rem; cursor: pointer; text-align: center; border: 1px dashed rgba(255,255,255,0.4); transition: background 0.3s; backdrop-filter: blur(4px); box-sizing: border-box; }
         .file-label:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
         input[type="file"] { display: none; }
 
@@ -66,17 +76,16 @@
             background: #000; 
             z-index: 200; 
             display: flex; 
-            flex-direction: column; /* Stack Ad and Text */
+            flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             color: gold; 
             transition: opacity 0.5s; 
-            pointer-events: auto; /* Block clicks while loading */
+            pointer-events: auto; 
         }
         
         #loader-ad-container {
             margin-bottom: 30px;
-            /* Container for the ad script */
             min-height: 50px;
             display: flex;
             align-items: center;
@@ -92,7 +101,7 @@
         }
 
         @media (max-width: 768px) {
-            .side-panel { right: 50%; transform: translateX(50%); bottom: 85px; width: 85%; max-width: 350px; padding: 20px; }
+            .side-panel { width: 90%; bottom: 50px; }
             .side-panel h3 { font-size: 1.1rem; }
         }
     </style>
@@ -104,7 +113,6 @@
             <script> atOptions = { 'key' : '04160f66b3308e7b2ef3b7cbde435a66', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script>
             <script src="https://www.highperformanceformat.com/04160f66b3308e7b2ef3b7cbde435a66/invoke.js"></script>
         </div>
-        
         <div id="loader-text">Loading Magic...</div>
     </div>
 
@@ -112,7 +120,8 @@
 
     <div id="ui-layer">
         <div class="ad-strip top">
-            <span style="color:#555; font-size:0.8rem">Sponsored</span>
+             <script> atOptions = { 'key' : '04160f66b3308e7b2ef3b7cbde435a66', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script>
+             <script src="https://www.highperformanceformat.com/04160f66b3308e7b2ef3b7cbde435a66/invoke.js"></script>
         </div>
 
         <div class="side-panel" id="panel">
@@ -150,7 +159,7 @@
             
             // Start Countdown
             let count = 3;
-            txt.style.fontSize = "4rem"; // Make text big
+            txt.style.fontSize = "4rem"; 
             txt.style.color = "#ffd700";
             txt.innerText = count;
 
@@ -161,13 +170,12 @@
                 } else {
                     clearInterval(timer);
                     txt.innerText = "1";
-                    // Wait a moment on '1', then fade
                     setTimeout(() => {
                         overlay.style.opacity = 0;
                         setTimeout(() => overlay.style.display = 'none', 500);
                     }, 800);
                 }
-            }, 800); // 800ms per number
+            }, 800);
         }
 
         /* --- 3D SETUP --- */
@@ -188,7 +196,7 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         
-        // --- GLOW (Low Brightness) ---
+        // Glow Settings
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
         bloomPass.threshold = 0.2; 
         bloomPass.strength = 0.6; 
@@ -223,7 +231,6 @@
                 checkForSharedWish(uid);
             } else {
                 update3DText("Someone"); 
-                // No shared wish, start countdown immediately
                 triggerCountdown();
             }
         });
@@ -249,7 +256,6 @@
         function animate() {
             requestAnimationFrame(animate); controls.update();
             const t = clock.getElapsedTime();
-            // Faster Animation
             frameGroup.position.y = Math.sin(t * 2.5) * 0.5; 
             textGroup.position.y = Math.sin((t * 2.5) + 1) * 0.5;
             
@@ -268,7 +274,7 @@
         }
         animate();
 
-        /* --- IMAGE RESIZING --- */
+        /* --- LOGIC --- */
         let base64Img = null;
         let generatedUID = null;
 
@@ -358,14 +364,13 @@
                     if(data.image) {
                         new THREE.TextureLoader().load(data.image, (tex) => {
                              applyTexture(tex);
-                             triggerCountdown(); // IMAGE LOADED -> START 3, 2, 1
+                             triggerCountdown();
                         }, undefined, () => triggerCountdown());
                     } else { triggerCountdown(); }
                 } else { triggerCountdown(); }
             })
             .catch(() => triggerCountdown());
             
-            // Safety timeout: if google script hangs, start countdown after 8s anyway
             setTimeout(triggerCountdown, 8000);
         }
 

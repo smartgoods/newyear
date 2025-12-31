@@ -318,15 +318,20 @@
             displayImageFromDrive(photoId);
         }
 
-        // Helper function to show image using Proxy
+        // --- NEW & IMPROVED IMAGE DISPLAY FUNCTION ---
         function displayImageFromDrive(fileId) {
+            if (!fileId) return;
+
             photoDisplay.style.display = 'block';
-            // Use wsrv.nl proxy to unblock Drive images
-            photoDisplay.src = `https://wsrv.nl/?url=https://drive.google.com/uc?id=${fileId}`;
             
+            // TRY 1: Use the 'lh3' direct content link (Most reliable for Mobile/Public)
+            photoDisplay.src = `https://lh3.googleusercontent.com/d/${fileId}`;
+            
+            // Error Handling: If lh3 fails, try the thumbnail fallback
             photoDisplay.onerror = function() {
-                this.style.display = 'none';
-                console.log("Image failed to load via proxy.");
+                console.log("LH3 link failed, trying fallback...");
+                this.onerror = null; // Prevent infinite loop
+                this.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
             };
         }
 
@@ -409,10 +414,8 @@
                         // SUCCESS: Store ID and Change Button
                         uploadedFileId = data.fileId;
                         
-                        // --- THIS IS THE FIX YOU ASKED FOR ---
-                        // Immediately show the image FROM DRIVE to the sender
-                        displayImageFromDrive(uploadedFileId); 
-                        // -------------------------------------
+                        // Show the image to the sender immediately using the new robust function
+                        displayImageFromDrive(uploadedFileId);
 
                         shareBtn.innerText = "Open WhatsApp Now 📲";
                         shareBtn.style.background = "#25D366"; // WhatsApp Green

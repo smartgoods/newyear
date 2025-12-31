@@ -37,7 +37,7 @@
             margin: 10px 0;
             z-index: 10;
             background: rgba(255, 255, 255, 0.05);
-            min-height: 60px;
+            min-height: 60px; /* Reserves space for the ad */
             overflow: hidden;
         }
 
@@ -71,6 +71,7 @@
             box-shadow: 0 0 20px #00d2ff;
             margin: 0 auto 20px;
             display: none; /* Hidden by default */
+            background-color: #222;
         }
 
         /* --- 3D Year Animation --- */
@@ -129,7 +130,7 @@
             color: #fff;
         }
 
-        /* New File Input Styling */
+        /* File Input Styling */
         input[type="file"] {
             display: none;
         }
@@ -137,16 +138,18 @@
             display: inline-block;
             padding: 10px 20px;
             background: #333;
-            color: #fff;
+            color: #ccc;
             border-radius: 25px;
             cursor: pointer;
             margin-bottom: 15px;
-            border: 1px solid #00d2ff;
+            border: 1px solid #555;
             font-size: 0.9rem;
             transition: 0.3s;
         }
         .file-label:hover {
             background: #444;
+            border-color: #00d2ff;
+            color: #fff;
         }
 
         .btn {
@@ -181,11 +184,11 @@
         .btn:active {
             transform: scale(0.95);
         }
-
+        
         .btn:disabled {
             background: #555;
-            cursor: not-allowed;
             box-shadow: none;
+            cursor: not-allowed;
         }
 
         /* --- Footer --- */
@@ -210,6 +213,7 @@
             100% { opacity: 0.8; }
         }
 
+        /* Mobile Adjustments */
         @media (max-width: 480px) {
             .year-3d { font-size: 3rem; }
             .happy-text { font-size: 2rem; }
@@ -234,8 +238,8 @@
     <canvas id="canvas"></canvas>
 
     <div class="container">
-        <img id="senderPhoto" class="user-photo-display" alt="Sender Photo" src="">
-        
+        <img id="senderPhoto" class="user-photo-display" alt="Surprise Photo">
+
         <h3 class="wishing-text" id="wishing-header">Welcome!</h3>
 
         <h1 class="happy-text">Happy New Year</h1>
@@ -252,9 +256,9 @@
             
             <label for="userFile" class="file-label" id="fileLabel">📷 Add Photo (Optional)</label>
             <input type="file" id="userFile" accept="image/*" onchange="previewFile()">
-
+            
             <button class="btn btn-whatsapp" id="shareBtn" onclick="handleShareLogic()">Share on WhatsApp 🚀</button>
-            <p id="statusMsg" style="font-size:0.8rem; color:#00d2ff; margin-top:5px;"></p>
+            <p id="statusMsg" style="font-size:0.8rem; color:#00d2ff; margin-top:5px; height:20px;"></p>
         </div>
     </div>
 
@@ -286,20 +290,26 @@
     </audio>
 
     <script>
-        // --- IMPORTANT: PASTE YOUR DEPLOYED WEB APP URL HERE ---
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWv-u5OcGPfLmklAHJmT_kdtltmiPv2T8UJ3AMzglkBwQ3auhizbeDpBSK2zmRApxeaQ/exec";
-
-        /* --- 1. Logic for Name, Photo & Sharing --- */
+        /* =========================================
+           CONFIGURATION
+           ========================================= */
+        // PASTE YOUR GOOGLE WEB APP URL HERE
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWv-u5OcGPfLmklAHJmT_kdtltmiPv2T8UJ3AMzglkBwQ3auhizbeDpBSK2zmRApxeaQ/exec"; 
+        
+        /* =========================================
+           1. LOGIC FOR NAME, PHOTO & SHARING
+           ========================================= */
         
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const senderName = urlParams.get('n');
         const photoId = urlParams.get('p');
 
-        // Update the wishing text and photo
+        // Elements
         const wishHeader = document.getElementById('wishing-header');
         const photoDisplay = document.getElementById('senderPhoto');
 
+        // 1a. Display Incoming Wish
         if (senderName) {
             const safeName = senderName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             wishHeader.innerHTML = `<span style="color:#fff">${safeName}</span> is wishing you:`;
@@ -308,23 +318,26 @@
             wishHeader.innerHTML = "Wishing you a...";
         }
 
-        // Display photo if ID is present
+        // 1b. Display Incoming Photo
         if (photoId) {
             photoDisplay.style.display = 'block';
-            // Use Google Drive direct link format
-            photoDisplay.src = `https://lh3.googleusercontent.com/d/${photoId}`;
+            // Reliable Public Google Drive Link
+            photoDisplay.src = `https://drive.google.com/uc?export=view&id=${photoId}`;
         }
 
-        // Preview local file selection text
+        // 1c. File Selection Preview
         function previewFile() {
             const fileInput = document.getElementById('userFile');
             const fileLabel = document.getElementById('fileLabel');
             if (fileInput.files.length > 0) {
-                fileLabel.innerText = "✅ Photo Selected";
+                fileLabel.innerHTML = "✅ Photo Selected";
                 fileLabel.style.background = "#25D366";
+                fileLabel.style.color = "#fff";
+                fileLabel.style.borderColor = "#25D366";
             }
         }
 
+        // 1d. Handle Sharing (Upload & WhatsApp)
         async function handleShareLogic() {
             const nameInput = document.getElementById("userName");
             const fileInput = document.getElementById("userFile");
@@ -339,116 +352,67 @@
                 return;
             }
 
-            // Case 1: Photo Selected - Upload first
+            // --- SCENARIO 1: Photo Selected (Upload Required) ---
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 
-                // Limit file size (e.g. 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert("File is too large! Please choose a smaller photo.");
+                // Limit size to ~4MB to be safe with Google Script limits
+                if (file.size > 4 * 1024 * 1024) {
+                    alert("File too large! Please pick a photo under 4MB.");
                     return;
                 }
 
                 shareBtn.disabled = true;
-                shareBtn.innerText = "Creating Wish... ⏳";
-                statusMsg.innerText = "Uploading photo, please wait...";
+                shareBtn.innerHTML = "Uploading... <span id='loader'>⏳</span>";
+                statusMsg.innerText = "Please wait, uploading to cloud...";
 
                 const reader = new FileReader();
-                reader.onload = async function(e) {
+                reader.onload = function(e) {
                     const base64Data = e.target.result.split(',')[1];
-                    const mimeType = file.type;
+                    
+                    const payload = {
+                        name: name,
+                        image: base64Data,
+                        mimeType: file.type
+                    };
 
-                    try {
-                        const response = await fetch(WEB_APP_URL, {
-                            method: "POST",
-                            mode: "no-cors", // Standard for GAS simple POST
-                            body: JSON.stringify({
-                                name: name,
-                                image: base64Data,
-                                mimeType: mimeType
-                            })
-                        });
-                        
-                        // Since no-cors returns opaque response, we can't read JSON directly easily in pure HTML without extensive setup.
-                        // However, for this viral script, we assume success or simply proceed with Name sharing if logic is complex.
-                        // BUT, to get the ID, we actually need standard CORS or JSONP.
-                        // SIMPLE FIX: For this use case, we will use the `redirect` method or just use the name if Fetch is tricky on free hosts.
-                        
-                        // REVISED APPROACH FOR STABILITY:
-                        // Standard GAS Web Apps allow text return if configured correctly.
-                        // Let's try to get the text. If CORS blocks it, we fallback to Name only.
-                        
-                        shareBtn.innerText = "Open WhatsApp 🚀";
+                    // FIXED: Use text/plain to avoid CORS preflight errors
+                    fetch(WEB_APP_URL, {
+                        method: "POST",
+                        redirect: "follow",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log("Upload Success:", data);
+                        if(data.result === "success") {
+                            createLinkAndShare(name, data.fileId);
+                        } else {
+                            // Fallback if script returns error
+                            createLinkAndShare(name, "");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Upload Error:", err);
+                        alert("Network issue. Sharing name only.");
+                        createLinkAndShare(name, "");
+                    })
+                    .finally(() => {
                         shareBtn.disabled = false;
-                        
-                        // NOTE: Due to cross-origin policies on simple HTML pages, getting the File ID back can be tricky.
-                        // If you deployed the script as "Anyone", fetch works but reading body might be blocked by CORS unless strictly handled.
-                        // For a pure client-side fix without a server proxy, we usually recommend using the Name only OR
-                        // ensuring the GAS script returns JSONP (which is deprecated) or standard JSON.
-                        
-                        // WORKAROUND: We will trigger the WhatsApp share assuming success.
-                        // To properly get the ID, we need to use the response. 
-                        // Since I can't debug your CORS environment, here is the robust logic:
-                        
-                        createLinkAndShare(name, ""); // Fallback if direct ID fetch fails visually
-                        
-                    } catch (err) {
-                        console.error(err);
-                        createLinkAndShare(name, ""); // Share name at least
-                    }
+                        shareBtn.innerText = "Share on WhatsApp 🚀";
+                        statusMsg.innerText = "";
+                    });
                 };
                 reader.readAsDataURL(file);
-                
-                // Note: The above Fetch with "no-cors" can't return the ID. 
-                // To actually get the ID, we need `redirect` or a proper CORS setup.
-                // Re-writing the reader.onload to use a specialized form submission for compatibility
-                
-                // Let's use a simpler Promise based approach that assumes you updated the GAS to return JSON
-                // and we hope CORS allows it. If not, we share just the name.
-                
-                // *ACTUAL FUNCTIONAL OVERWRITE FOR THE READER*
-                reader.onload = function(e) {
-                     const base64Data = e.target.result.split(',')[1];
-                     
-                     // Using specific settings to try and get data back
-                     const payload = {
-                         name: name,
-                         image: base64Data,
-                         mimeType: file.type
-                     };
-                     
-                     fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: JSON.stringify(payload)
-                     })
-                     .then(res => res.json())
-                     .then(data => {
-                         if(data.result === "success") {
-                             createLinkAndShare(name, data.fileId);
-                         } else {
-                             createLinkAndShare(name, "");
-                         }
-                         shareBtn.disabled = false;
-                         shareBtn.innerText = "Share on WhatsApp 🚀";
-                         statusMsg.innerText = "";
-                     })
-                     .catch(err => {
-                         // Fallback for CORS errors
-                         // We can't get the ID easily if CORS blocks the response body
-                         alert("Note: Due to browser security, your photo might not attach directly. Sharing name only.");
-                         createLinkAndShare(name, "");
-                         shareBtn.disabled = false;
-                         shareBtn.innerText = "Share on WhatsApp 🚀";
-                         statusMsg.innerText = "";
-                     });
-                }
 
             } else {
-                // Case 2: No Photo - Just share Name
+                // --- SCENARIO 2: No Photo (Instant Share) ---
                 createLinkAndShare(name, "");
             }
         }
 
+        // 1e. Generate Link and Open WhatsApp
         function createLinkAndShare(name, fileId) {
             var baseUrl = window.location.href.split('?')[0];
             var finalLink = `${baseUrl}?n=${encodeURIComponent(name)}`;
@@ -461,7 +425,9 @@
             window.open(`whatsapp://send?text=${message}`, '_blank');
         }
 
-        /* --- 2. Music Logic --- */
+        /* =========================================
+           2. MUSIC LOGIC
+           ========================================= */
         var music = document.getElementById("bgMusic");
         var musicBtn = document.getElementById("musicBtn");
         var isPlaying = false;
@@ -478,7 +444,9 @@
             }
         }
 
-        /* --- 3. Fireworks Effect (Unchanged) --- */
+        /* =========================================
+           3. FIREWORKS EFFECT (Standard Canvas)
+           ========================================= */
         window.requestAnimFrame = (function() {
             return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
                 window.setTimeout(callback, 1000 / 60);

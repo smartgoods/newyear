@@ -92,8 +92,7 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // 1. PASTE YOUR GOOGLE SCRIPT URL HERE
-        // Make sure you deployed as "New Version"
+        // 1. UPDATED URL
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCFXQdHH4hsx89kISK2ZV9VmzadqKeju5vd9rsCLnREs-ySWXDFM6p0OYLWr8Xe6_ImQ/exec"; 
 
         /* --- MUSIC LOGIC --- */
@@ -107,7 +106,6 @@
                 btn.innerHTML = "🔇";
             }
         }
-        // Try auto-play on first click
         document.body.addEventListener('click', () => {
              const m = document.getElementById('bgMusic');
              if(m.paused) m.play().then(()=> document.getElementById('music-control').innerHTML="🔊").catch(()=>{});
@@ -205,7 +203,7 @@
         }
         animate();
 
-        /* --- UI & API LOGIC (FIXED) --- */
+        /* --- UI & API LOGIC (FIXED FOR CORS) --- */
         let base64Img = null;
         let generatedUID = null;
 
@@ -245,7 +243,7 @@
             })
             .catch(e => {
                 console.error(e);
-                status.innerText = "Error Saving. (Did you deploy the script as New Version?)";
+                status.innerText = "Error Saving. (Deploy script as New Version)";
                 status.style.color = "red";
                 document.getElementById('btnGen').disabled = false;
             });

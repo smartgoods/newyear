@@ -313,11 +313,19 @@
             wishHeader.innerHTML = "Wishing you a...";
         }
 
-        // 1b. Display Incoming Photo
+        // 1b. Display Incoming Photo (CRITICAL FIX HERE)
         if (photoId) {
             photoDisplay.style.display = 'block';
-            // FIXED: Use the thumbnail link format which works reliably
-            photoDisplay.src = `https://drive.google.com/thumbnail?id=${photoId}&sz=w1000`;
+            
+            // WE USE 'wsrv.nl' to PROXY the Google Drive Image.
+            // This bypasses the 403 blocks that stop the image from showing.
+            photoDisplay.src = `https://wsrv.nl/?url=https://drive.google.com/uc?id=${photoId}`;
+            
+            // If the image fails to load, hide it so we don't show a broken icon
+            photoDisplay.onerror = function() {
+                this.style.display = 'none';
+                console.log("Image failed to load via proxy.");
+            };
         }
 
         // 1c. File Selection & Button Reset

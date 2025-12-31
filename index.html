@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,7 +106,7 @@
             font-weight: 600; 
             font-size: 1.3rem; 
             color: #ffd700; 
-            text-align: center;
+            text-align: center; 
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -153,6 +152,10 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
         .btn-apply {
@@ -169,7 +172,17 @@
         }
         .btn-share:hover { background: #f0f0f0; }
 
+        .btn-whatsapp {
+            background: #25D366;
+            color: white;
+            display: none; /* Hidden by default */
+        }
+        .btn-whatsapp:hover { background: #128C7E; }
+
         #status { font-size: 0.8rem; color: #aaa; text-align: center; margin-top: 5px; min-height: 15px;}
+        
+        /* Loading Overlay */
+        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: flex; align-items: center; justify-content: center; color: gold; font-size: 1.5rem; transition: opacity 0.5s; pointer-events: none; }
 
         /* --- MOBILE RESPONSIVENESS --- */
         @media (max-width: 768px) {
@@ -189,6 +202,8 @@
     </style>
 </head>
 <body>
+
+    <div id="loader-overlay">Loading Magic...</div>
 
     <audio id="bgMusic" loop>
         <source src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_1e3e86c073.mp3?filename=upbeat-party-124040.mp3" type="audio/mpeg">
@@ -216,8 +231,11 @@
             </label>
             <input type="file" id="inpPhoto" accept="image/*">
 
-            <button class="btn-apply" onclick="updateScene()">Generate 3D Wish</button>
-            <button class="btn-share" id="btnShare" onclick="nativeShare()">📤 Share Wish</button>
+            <button class="btn-apply" id="btnGen" onclick="generateWish()">Generate 3D Wish</button>
+            
+            <button class="btn-share" id="btnShare" onclick="nativeShare()">📤 Copy Link</button>
+            <button class="btn-whatsapp" id="btnWhatsapp" onclick="shareWhatsapp()">💬 Share on WhatsApp</button>
+            
             <div id="status"></div>
         </div>
 
@@ -242,40 +260,34 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
+        // *** UPDATED LINK ***
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqkakHeJx5zCEC-ij6hWivU7d34X4GeGx-ekH6klWNzypMfntOCtWDB_7CTtu_Z2yNQA/exec"; 
+
         /* --------------------------------------------------------
-           1. MUSIC LOGIC (FIXED)
+           1. MUSIC LOGIC
            -------------------------------------------------------- */
         window.toggleMusic = function() {
             const music = document.getElementById('bgMusic');
             const btn = document.getElementById('music-control');
             
             if(music.paused) {
-                // We use a promise to handle play failure (browser blocking)
                 const playPromise = music.play();
                 if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        btn.innerHTML = "🔊"; // Playing icon
-                    })
-                    .catch(error => {
-                        console.log("Audio play failed:", error);
-                        btn.innerHTML = "❌"; // Error icon
-                    });
+                    playPromise.then(_ => { btn.innerHTML = "🔊"; })
+                    .catch(error => { console.log("Audio error", error); btn.innerHTML = "❌"; });
                 }
             } else {
                 music.pause();
-                btn.innerHTML = "🔇"; // Mute icon
+                btn.innerHTML = "🔇";
             }
         }
         
-        // Browsers block audio until a user interacts with the page.
-        // This listener tries to start audio silently on the first click anywhere.
         document.body.addEventListener('click', () => {
              const music = document.getElementById('bgMusic');
              if(music.paused) { 
-                 // Try to play
                  music.play().then(() => {
                     document.getElementById('music-control').innerHTML = "🔊";
-                 }).catch((e) => { /* Ignore auto-play errors */ }); 
+                 }).catch((e) => {}); 
              }
         }, { once: true });
 
@@ -291,7 +303,7 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Performance optimization
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ReinhardToneMapping;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
@@ -303,7 +315,7 @@
         controls.autoRotate = true;
         controls.autoRotateSpeed = 0.8;
 
-        // GLOW EFFECT
+        // GLOW EFFECT (Restored Brightness)
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
@@ -319,7 +331,7 @@
 
 
         /* --------------------------------------------------------
-           3. OBJECTS (Frame, Text, Fireworks)
+           3. OBJECTS
            -------------------------------------------------------- */
         const frameGroup = new THREE.Group();
         scene.add(frameGroup);
@@ -367,9 +379,16 @@
             const subMesh = new THREE.Mesh(subGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 }));
             subMesh.position.set(0, -8, 0);
             textGroup.add(subMesh);
+
+            // Hide Loader
+            document.getElementById('loader-overlay').style.opacity = 0;
+            setTimeout(() => document.getElementById('loader-overlay').style.display = 'none', 500);
+            
+            // CHECK FOR SHARED WISH AFTER FONT LOADS
+            checkForSharedWish();
         });
 
-        // FIREWORKS
+        // FIREWORKS (Restored)
         const fireworks = [];
         function createFirework() {
             const x = (Math.random() - 0.5) * 40;
@@ -426,25 +445,27 @@
 
 
         /* --------------------------------------------------------
-           4. UI LOGIC (Form, Upload, Share)
+           4. UI LOGIC (Updated for Shared Data)
            -------------------------------------------------------- */
         
-        // ** PASTE YOUR GOOGLE SCRIPT URL HERE **
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqkakHeJx5zCEC-ij6hWivU7d34X4GeGx-ekH6klWNzypMfntOCtWDB_7CTtu_Z2yNQA/exec"; 
-
         let base64Img = null;
+        let generatedUID = null;
 
         document.getElementById('inpPhoto').addEventListener('change', (e) => {
             if(e.target.files[0]){
                 const f = e.target.files[0];
-                document.getElementById('fileLabel').innerHTML = "✅ Photo Selected";
                 const r = new FileReader();
-                r.onload = (ev) => base64Img = ev.target.result;
+                r.onload = (ev) => {
+                    base64Img = ev.target.result;
+                    document.getElementById('fileLabel').innerHTML = "✅ Photo Selected";
+                    update3DPhoto(base64Img); // Preview immediately
+                };
                 r.readAsDataURL(f);
             }
         });
 
-        window.updateScene = function() {
+        // GENERATE WISH & SAVE TO DB
+        window.generateWish = function() {
             const name = document.getElementById('inpName').value;
             const status = document.getElementById('status');
 
@@ -454,67 +475,114 @@
                 return;
             }
 
+            // UI Update
+            if(name) update3DText(name);
+
             status.style.color = "#aaa";
-            status.innerText = "Processing Magic...";
-
-            // Update Photo
-            if(base64Img) {
-                new THREE.TextureLoader().load(base64Img, (tex) => {
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    const aspect = tex.image.width / tex.image.height;
-                    photoPlane.scale.set(aspect * (12/9), 1, 1); 
-                    photoPlane.material.map = tex;
-                    photoPlane.material.needsUpdate = true;
-                });
-            }
-
-            // Update Name
-            if(name && loadedFont) {
-                textGroup.children.pop(); // Remove old subtext
-                const nameGeo = new TextGeometry(name, { font: loadedFont, size: 1.2, height: 0.2 });
-                nameGeo.center();
-                const nameMesh = new THREE.Mesh(nameGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00aaff, emissiveIntensity: 0.8 }));
-                nameMesh.position.set(0, -8, 0);
-                textGroup.add(nameMesh);
-            }
-
-            document.getElementById('btnShare').style.display = "block";
-            status.innerText = "Wish Generated!";
+            status.innerText = "Saving your Wish...";
+            document.getElementById('btnGen').disabled = true;
 
             // Backend Upload
-            if(GOOGLE_SCRIPT_URL && GOOGLE_SCRIPT_URL.includes("http")) {
-                fetch(GOOGLE_SCRIPT_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ name: name || "Anonymous", image: base64Img || "No Image" })
-                }).catch(e => console.log("Bg Upload started"));
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ name: name || "Anonymous", image: base64Img || "No Image" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.result === "success") {
+                    generatedUID = data.uid; // Get UID from updated script
+                    status.innerText = "Wish Generated! Share it below.";
+                    status.style.color = "#44ff44";
+                    
+                    // Show Share Buttons
+                    document.getElementById('btnGen').style.display = 'none';
+                    document.getElementById('btnShare').style.display = 'flex';
+                    document.getElementById('btnWhatsapp').style.display = 'flex';
+                } else {
+                    status.innerText = "Error saving wish.";
+                }
+            })
+            .catch(e => {
+                console.log(e);
+                status.innerText = "Connection error. Wish is local only.";
+            });
+        }
+
+        // CHECK IF VISITOR IS VIEWING A SHARED WISH
+        function checkForSharedWish() {
+            const params = new URLSearchParams(window.location.search);
+            const uid = params.get('wish');
+
+            if(uid) {
+                // Change UI to "Viewer Mode"
+                document.querySelector('.side-panel h3').innerText = "You have a Wish! ✨";
+                document.getElementById('inpName').style.display = 'none';
+                document.getElementById('fileLabel').style.display = 'none';
+                document.getElementById('btnGen').innerText = "Create Your Own";
+                document.getElementById('btnGen').onclick = () => { window.location.href = window.location.pathname; }; 
+
+                // Fetch Data
+                fetch(`${GOOGLE_SCRIPT_URL}?uid=${uid}`)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.result === "success") {
+                        if(data.name) update3DText(data.name);
+                        if(data.image) update3DPhoto(data.image);
+                    }
+                })
+                .catch(err => console.error("Error fetching wish", err));
             }
         }
 
-        /* --- 5. NATIVE SHARE FEATURE --- */
+        /* --- HELPERS --- */
+        function update3DText(name) {
+            if(!loadedFont) return;
+            // Remove old subtext if exists
+            const old = textGroup.children.find(c => c.geometry.type === 'TextGeometry' && c.position.y === -8);
+            if(old) textGroup.remove(old);
+
+            const nameGeo = new TextGeometry(name, { font: loadedFont, size: 1.2, height: 0.2 });
+            nameGeo.center();
+            const nameMesh = new THREE.Mesh(nameGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00aaff, emissiveIntensity: 0.8 }));
+            nameMesh.position.set(0, -8, 0);
+            textGroup.add(nameMesh);
+        }
+
+        function update3DPhoto(b64) {
+            new THREE.TextureLoader().load(b64, (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                const aspect = tex.image.width / tex.image.height;
+                photoPlane.scale.set(1, 1, 1);
+                // Simple aspect fit
+                if(aspect > 0.75) photoPlane.scale.set(1, 1/aspect * 0.75, 1);
+                else photoPlane.scale.set(aspect * 1.33, 1, 1);
+                
+                photoPlane.material.map = tex;
+                photoPlane.material.needsUpdate = true;
+            });
+        }
+
+        /* --- 5. SHARE FEATURE --- */
         window.nativeShare = async function() {
-            const name = document.getElementById('inpName').value || "Someone";
+            const url = window.location.origin + window.location.pathname + "?wish=" + generatedUID;
             const shareData = {
                 title: 'New Year Wish 2026',
-                text: `${name} has sent you a special glowing 3D Wish for 2026! ✨\nCheck it out here:`,
-                url: window.location.href
+                text: `See my glowing 3D Wish for 2026! ✨`,
+                url: url
             };
 
-            // Try Native Share (Mobile)
             if (navigator.share) {
-                try {
-                    await navigator.share(shareData);
-                } catch (err) {
-                    console.log('Share canceled');
-                }
+                try { await navigator.share(shareData); } catch (err) {}
             } else {
-                // Fallback for Desktop (Copy to Clipboard)
-                try {
-                    await navigator.clipboard.writeText(shareData.text + " " + shareData.url);
-                    alert("Link copied to clipboard! You can paste it anywhere.");
-                } catch (err) {
-                    alert("Could not copy link. Please copy the URL from the browser bar.");
-                }
+                navigator.clipboard.writeText(shareData.text + " " + shareData.url);
+                alert("Link copied to clipboard!");
             }
+        }
+
+        window.shareWhatsapp = function() {
+            const url = window.location.origin + window.location.pathname + "?wish=" + generatedUID;
+            const text = encodeURIComponent(`*Happy New Year 2026!* 🎆\nI created a special 3D wish for you.\n\n👇 *See it here:*\n${url}`);
+            window.open(`https://wa.me/?text=${text}`, '_blank');
         }
 
         // Resize Handler

@@ -25,7 +25,7 @@
             bottom: 100px; 
             right: 40px; 
             width: 300px; 
-            background: rgba(0, 0, 0, 0.0); /* Transparent */
+            background: rgba(0, 0, 0, 0.0); 
             backdrop-filter: none; 
             border: none;
             box-shadow: none;
@@ -59,7 +59,6 @@
         .btn-whatsapp { background: #25D366; color: white; display: none; }
         #status { font-size: 0.8rem; color: #aaa; text-align: center; margin-top: 5px; min-height: 15px; text-shadow: 0 1px 2px black;}
         
-        /* Loading Overlay - Covers everything */
         #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: flex; align-items: center; justify-content: center; color: gold; font-size: 1.5rem; transition: opacity 0.5s; pointer-events: none; }
 
         @media (max-width: 768px) {
@@ -108,20 +107,16 @@
 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCFXQdHH4hsx89kISK2ZV9VmzadqKeju5vd9rsCLnREs-ySWXDFM6p0OYLWr8Xe6_ImQ/exec"; 
 
-        // HELPER: Hide Loader safely
         function hideLoader() {
             const l = document.getElementById('loader-overlay');
-            if(l) {
-                l.style.opacity = 0;
-                setTimeout(() => l.style.display = 'none', 500);
-            }
+            if(l) { l.style.opacity = 0; setTimeout(() => l.style.display = 'none', 500); }
         }
 
         /* --- 3D SETUP --- */
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x020205, 0.015);
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 25); // Zoomed out
+        camera.position.set(0, 0, 25);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -132,10 +127,16 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true; controls.enablePan = false; controls.maxDistance = 40; controls.minDistance = 10; controls.autoRotate = true; controls.autoRotateSpeed = 0.8;
 
+        // --- UPDATED GLOW SETTINGS (LESS BRIGHT) ---
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
+        
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0; bloomPass.strength = 1.2; bloomPass.radius = 0.5;
+        // Changed threshold from 0 to 0.2 (Ignores photo pixels)
+        bloomPass.threshold = 0.2; 
+        // Changed strength from 1.2 to 0.6 (Softer glow)
+        bloomPass.strength = 0.6; 
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
         scene.add(new THREE.AmbientLight(0x404040));
@@ -158,19 +159,13 @@
         let loadedFont = null;
         const fontLoader = new FontLoader();
         
-        // --- LOADING SEQUENCE ---
         fontLoader.load('https://threejs.org/examples/fonts/optimer_bold.typeface.json', (font) => {
             loadedFont = font;
-            
-            // Check URL for Shared Wish
             const params = new URLSearchParams(window.location.search);
             const uid = params.get('wish');
-
             if(uid) {
-                // Shared Mode: Keep Loader VISIBLE until data is fetched
                 checkForSharedWish(uid);
             } else {
-                // Creation Mode: Hide loader immediately
                 update3DText("Someone"); 
                 hideLoader();
             }
@@ -197,7 +192,6 @@
         function animate() {
             requestAnimationFrame(animate); controls.update();
             const t = clock.getElapsedTime();
-            // Fast Animation
             frameGroup.position.y = Math.sin(t * 2.5) * 0.5; 
             textGroup.position.y = Math.sin((t * 2.5) + 1) * 0.5;
             
@@ -216,15 +210,45 @@
         }
         animate();
 
-        /* --- UI & API LOGIC --- */
+        /* --- IMAGE RESIZING --- */
         let base64Img = null;
         let generatedUID = null;
 
+        function resizeImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 800; 
+
+                    if (width > height) {
+                        if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+                    } else {
+                        if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', 0.8));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         document.getElementById('inpPhoto').addEventListener('change', (e) => {
             if(e.target.files[0]){
-                const r = new FileReader();
-                r.onload = (ev) => { base64Img = ev.target.result; document.getElementById('fileLabel').innerHTML = "✅ Photo Selected"; update3DPhoto(base64Img); };
-                r.readAsDataURL(e.target.files[0]);
+                const f = e.target.files[0];
+                document.getElementById('fileLabel').innerHTML = "⏳ Processing...";
+                resizeImage(f, (resizedBase64) => {
+                    base64Img = resizedBase64;
+                    document.getElementById('fileLabel').innerHTML = "✅ Photo Ready";
+                    update3DPhoto(base64Img);
+                });
             }
         });
 
@@ -261,64 +285,44 @@
             });
         }
 
-        // --- SHARED WISH HANDLER ---
         function checkForSharedWish(uid) {
-            // Setup UI for viewer
             document.querySelector('.side-panel h3').innerText = "You have a Wish! ✨";
             document.getElementById('inpName').style.display = 'none';
             document.getElementById('fileLabel').style.display = 'none';
             document.getElementById('btnGen').innerText = "Create Your Own";
             document.getElementById('btnGen').onclick = () => { window.location.href = window.location.pathname; }; 
             
-            // Fetch Data
             fetch(`${GOOGLE_SCRIPT_URL}?uid=${uid}`)
             .then(res => res.json())
             .then(data => {
                 if(data.result === "success") {
                     if(data.name) update3DText(data.name);
-                    
                     if(data.image) {
-                        // LOAD IMAGE BEFORE HIDING LOADER
                         new THREE.TextureLoader().load(data.image, (tex) => {
                              applyTexture(tex);
-                             hideLoader(); // Hide only after image is ready
-                        }, undefined, (err) => {
-                             // If image fails, hide loader anyway
                              hideLoader();
-                        });
-                    } else {
-                        // No image, hide immediately
-                        hideLoader();
-                    }
-                } else {
-                    hideLoader();
-                }
+                        }, undefined, () => hideLoader());
+                    } else { hideLoader(); }
+                } else { hideLoader(); }
             })
             .catch(() => hideLoader());
-
-            // Safety timeout: if google script hangs, hide loader after 8s
+            
             setTimeout(hideLoader, 8000);
         }
 
         function update3DText(name) {
             if(!loadedFont) return;
             textGroup.clear();
-
-            // 1. TOP LINE
             const nameGeo = new TextGeometry(name, { font: loadedFont, size: 2.0, height: 0.3, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.02 });
             nameGeo.center();
             const nameMesh = new THREE.Mesh(nameGeo, goldMat);
             nameMesh.position.set(0, 9.5, 0); 
             textGroup.add(nameMesh);
-
-            // 2. MIDDLE LINE
             const midGeo = new TextGeometry("is wishing you", { font: loadedFont, size: 0.7, height: 0.1 });
             midGeo.center();
             const midMesh = new THREE.Mesh(midGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
             midMesh.position.set(0, 7.5, 0); 
             textGroup.add(midMesh);
-
-            // 3. BOTTOM LINE
             const bottomGeo = new TextGeometry("Happy New Year 2026", { font: loadedFont, size: 1.8, height: 0.3, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.02 });
             bottomGeo.center();
             const bottomMesh = new THREE.Mesh(bottomGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00aaff, emissiveIntensity: 0.5 }));
@@ -326,7 +330,6 @@
             textGroup.add(bottomMesh);
         }
 
-        // Helper to apply texture logic
         function applyTexture(tex) {
             tex.colorSpace = THREE.SRGBColorSpace;
             const asp = tex.image.width / tex.image.height;
@@ -337,9 +340,7 @@
         }
 
         function update3DPhoto(b64) {
-            new THREE.TextureLoader().load(b64, (tex) => {
-                applyTexture(tex);
-            });
+            new THREE.TextureLoader().load(b64, (tex) => { applyTexture(tex); });
         }
 
         window.nativeShare = function() {

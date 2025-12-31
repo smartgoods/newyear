@@ -316,7 +316,8 @@
         // 1b. Display Incoming Photo
         if (photoId) {
             photoDisplay.style.display = 'block';
-            photoDisplay.src = `https://drive.google.com/uc?export=view&id=${photoId}`;
+            // FIXED: Use the thumbnail link format which works reliably
+            photoDisplay.src = `https://drive.google.com/thumbnail?id=${photoId}&sz=w1000`;
         }
 
         // 1c. File Selection & Button Reset

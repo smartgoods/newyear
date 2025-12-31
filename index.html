@@ -21,20 +21,15 @@
         .side-panel { 
             pointer-events: auto; 
             position: absolute; 
-            
-            /* Center at Bottom */
             bottom: 60px; 
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 400px;
-
-            /* Transparent Style */
             background: rgba(0, 0, 0, 0.0); 
             backdrop-filter: none; 
             border: none;
             box-shadow: none;
-            
             color: white; 
             transition: all 0.4s; 
             z-index: 90; 
@@ -65,11 +60,40 @@
         button { width: 100%; padding: 14px; border: none; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;}
         .btn-apply { background: linear-gradient(135deg, #ffd700, #ffaa00); color: #222; box-shadow: 0 4px 15px rgba(255, 170, 0, 0.3); }
         .btn-apply:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5); }
-        .btn-share { background: #ffffff; color: #333; display: none; }
-        .btn-whatsapp { background: #25D366; color: white; display: none; }
+        
+        /* SHARE ICONS CONTAINER */
+        #share-container {
+            display: none; /* Hidden initially */
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .share-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
+        }
+        .share-icon:hover { transform: scale(1.1); }
+        .share-icon:active { transform: scale(0.9); }
+
+        .icon-wa { background: #25D366; color: white; }
+        .icon-copy { background: #ffffff; color: #333; }
+
         #status { font-size: 0.8rem; color: #aaa; text-align: center; margin-top: 5px; min-height: 15px; text-shadow: 0 1px 2px black;}
         
-        /* --- LOADING OVERLAY WITH AD & COUNTDOWN --- */
+        /* --- LOADING OVERLAY --- */
         #loader-overlay { 
             position: fixed; 
             top: 0; left: 0; width: 100%; height: 100%; 
@@ -84,21 +108,8 @@
             pointer-events: auto; 
         }
         
-        #loader-ad-container {
-            margin-bottom: 30px;
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #loader-text {
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: transform 0.2s;
-        }
+        #loader-ad-container { margin-bottom: 30px; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+        #loader-text { font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; transition: transform 0.2s; }
 
         @media (max-width: 768px) {
             .side-panel { width: 90%; bottom: 50px; }
@@ -131,8 +142,12 @@
             <input type="file" id="inpPhoto" accept="image/*">
 
             <button class="btn-apply" id="btnGen" onclick="generateWish()">Generate 3D Wish</button>
-            <button class="btn-share" id="btnShare" onclick="nativeShare()">📤 Copy Link</button>
-            <button class="btn-whatsapp" id="btnWhatsapp" onclick="shareWhatsapp()">💬 Share on WhatsApp</button>
+            
+            <div id="share-container">
+                <div class="share-icon icon-wa" onclick="shareWhatsapp()" title="Share on WhatsApp">💬</div>
+                <div class="share-icon icon-copy" onclick="nativeShare()" title="Copy Link">📋</div>
+            </div>
+
             <div id="status"></div>
         </div>
     </div>
@@ -156,12 +171,8 @@
         function triggerCountdown() {
             const txt = document.getElementById('loader-text');
             const overlay = document.getElementById('loader-overlay');
-            
-            // Start Countdown
             let count = 3;
-            txt.style.fontSize = "4rem"; 
-            txt.style.color = "#ffd700";
-            txt.innerText = count;
+            txt.style.fontSize = "4rem"; txt.style.color = "#ffd700"; txt.innerText = count;
 
             const timer = setInterval(() => {
                 count--;
@@ -196,26 +207,26 @@
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         
-        // Glow Settings
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2; 
-        bloomPass.strength = 0.6; 
-        bloomPass.radius = 0.5;
+        bloomPass.threshold = 0.2; bloomPass.strength = 0.6; bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
         scene.add(new THREE.AmbientLight(0x404040));
         const dl = new THREE.DirectionalLight(0xffffff, 2); dl.position.set(5, 5, 5); scene.add(dl);
 
-        /* --- OBJECTS --- */
+        /* --- OBJECTS (UPDATED SIZE) --- */
         const frameGroup = new THREE.Group(); scene.add(frameGroup);
         const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 1, roughness: 0.3, emissive: 0xaa6600, emissiveIntensity: 0.2 });
-        frameGroup.add(new THREE.Mesh(new THREE.BoxGeometry(9.2, 12.2, 0.2), goldMat));
+        
+        // ** CHANGE: Shorter Frame (9.2 x 9.2) - Square **
+        frameGroup.add(new THREE.Mesh(new THREE.BoxGeometry(9.2, 9.2, 0.2), goldMat));
 
-        const photoGeo = new THREE.PlaneGeometry(9, 12);
-        const defCanvas = document.createElement('canvas'); defCanvas.width = 512; defCanvas.height = 680;
-        const ctx = defCanvas.getContext('2d'); ctx.fillStyle = "#111"; ctx.fillRect(0,0,512,680);
+        // ** CHANGE: Shorter Photo Plane (9 x 9) **
+        const photoGeo = new THREE.PlaneGeometry(9, 9);
+        const defCanvas = document.createElement('canvas'); defCanvas.width = 512; defCanvas.height = 512;
+        const ctx = defCanvas.getContext('2d'); ctx.fillStyle = "#111"; ctx.fillRect(0,0,512,512);
         ctx.fillStyle = "#fff"; ctx.font = "bold 60px Arial"; ctx.textAlign = "center";
-        ctx.fillText("YOUR", 256, 300); ctx.fillText("PHOTO", 256, 380);
+        ctx.fillText("YOUR", 256, 220); ctx.fillText("PHOTO", 256, 290);
         const photoPlane = new THREE.Mesh(photoGeo, new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(defCanvas) }));
         photoPlane.position.z = 0.11; frameGroup.add(photoPlane);
 
@@ -287,14 +298,9 @@
                     let width = img.width;
                     let height = img.height;
                     const maxDim = 800; 
-
-                    if (width > height) {
-                        if (width > maxDim) { height *= maxDim / width; width = maxDim; }
-                    } else {
-                        if (height > maxDim) { width *= maxDim / height; height = maxDim; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    if (width > height) { if (width > maxDim) { height *= maxDim / width; width = maxDim; } } 
+                    else { if (height > maxDim) { width *= maxDim / height; height = maxDim; } }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     callback(canvas.toDataURL('image/jpeg', 0.8));
@@ -335,10 +341,10 @@
             .then(data => {
                 if(data.result === "success") {
                     generatedUID = data.uid;
-                    status.innerText = "Wish Saved! Share below."; status.style.color = "#44ff44";
+                    status.innerText = "Wish Saved! Select an option below:"; status.style.color = "#44ff44";
                     document.getElementById('btnGen').style.display = 'none';
-                    document.getElementById('btnShare').style.display = 'flex';
-                    document.getElementById('btnWhatsapp').style.display = 'flex';
+                    // SHOW ICONS
+                    document.getElementById('share-container').style.display = 'flex';
                 } else { throw new Error(data.error || "Script Error"); }
             })
             .catch(e => {
@@ -374,31 +380,52 @@
             setTimeout(triggerCountdown, 8000);
         }
 
+        // --- UPDATED TEXT POSITIONING (For Shorter Frame) ---
         function update3DText(name) {
             if(!loadedFont) return;
             textGroup.clear();
+            
+            // 1. TOP LINE (Moved closer to square frame)
             const nameGeo = new TextGeometry(name, { font: loadedFont, size: 2.0, height: 0.3, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.02 });
             nameGeo.center();
             const nameMesh = new THREE.Mesh(nameGeo, goldMat);
-            nameMesh.position.set(0, 9.5, 0); 
+            nameMesh.position.set(0, 7.5, 0); // Lowered
             textGroup.add(nameMesh);
+
+            // 2. MIDDLE LINE
             const midGeo = new TextGeometry("is wishing you", { font: loadedFont, size: 0.7, height: 0.1 });
             midGeo.center();
             const midMesh = new THREE.Mesh(midGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
-            midMesh.position.set(0, 7.5, 0); 
+            midMesh.position.set(0, 5.5, 0); // Lowered
             textGroup.add(midMesh);
-            const bottomGeo = new TextGeometry("Happy New Year 2026", { font: loadedFont, size: 1.8, height: 0.3, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.02 });
+
+            // 3. BOTTOM LINE (Smaller Font, Closer to Frame)
+            const bottomGeo = new TextGeometry("Happy New Year 2026", { 
+                font: loadedFont, 
+                size: 1.1, // ** SMALLER FONT SIZE **
+                height: 0.3, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.02 
+            });
             bottomGeo.center();
             const bottomMesh = new THREE.Mesh(bottomGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00aaff, emissiveIntensity: 0.5 }));
-            bottomMesh.position.set(0, -9, 0); 
+            bottomMesh.position.set(0, -6.5, 0); // Moved UP closer to frame
             textGroup.add(bottomMesh);
         }
 
+        // --- ASPECT RATIO FIX FOR SQUARE FRAME ---
         function applyTexture(tex) {
             tex.colorSpace = THREE.SRGBColorSpace;
             const asp = tex.image.width / tex.image.height;
             photoPlane.scale.set(1, 1, 1);
-            if(asp > 0.75) photoPlane.scale.set(1, 1/asp * 0.75, 1); else photoPlane.scale.set(asp * 1.33, 1, 1);
+            
+            // Since frame is now Square (1:1):
+            if(asp > 1) {
+                // Image is wide -> Fit Width, Shrink Height (Vertical Bars will appear)
+                // OR Fit Height, Crop Width? Usually standard "Fit Center":
+                photoPlane.scale.set(1, 1/asp, 1);
+            } else {
+                // Image is tall -> Fit Height, Shrink Width
+                photoPlane.scale.set(asp, 1, 1);
+            }
             photoPlane.material.map = tex; 
             photoPlane.material.needsUpdate = true;
         }

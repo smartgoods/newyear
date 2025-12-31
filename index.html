@@ -59,7 +59,37 @@
         .btn-whatsapp { background: #25D366; color: white; display: none; }
         #status { font-size: 0.8rem; color: #aaa; text-align: center; margin-top: 5px; min-height: 15px; text-shadow: 0 1px 2px black;}
         
-        #loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: flex; align-items: center; justify-content: center; color: gold; font-size: 1.5rem; transition: opacity 0.5s; pointer-events: none; }
+        /* --- LOADING OVERLAY WITH AD & COUNTDOWN --- */
+        #loader-overlay { 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; 
+            z-index: 200; 
+            display: flex; 
+            flex-direction: column; /* Stack Ad and Text */
+            align-items: center; 
+            justify-content: center; 
+            color: gold; 
+            transition: opacity 0.5s; 
+            pointer-events: auto; /* Block clicks while loading */
+        }
+        
+        #loader-ad-container {
+            margin-bottom: 30px;
+            /* Container for the ad script */
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #loader-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: transform 0.2s;
+        }
 
         @media (max-width: 768px) {
             .side-panel { right: 50%; transform: translateX(50%); bottom: 85px; width: 85%; max-width: 350px; padding: 20px; }
@@ -69,14 +99,20 @@
 </head>
 <body>
 
-    <div id="loader-overlay">Loading Magic...</div>
+    <div id="loader-overlay">
+        <div id="loader-ad-container">
+            <script> atOptions = { 'key' : '04160f66b3308e7b2ef3b7cbde435a66', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script>
+            <script src="https://www.highperformanceformat.com/04160f66b3308e7b2ef3b7cbde435a66/invoke.js"></script>
+        </div>
+        
+        <div id="loader-text">Loading Magic...</div>
+    </div>
 
     <div id="canvas-container"></div>
 
     <div id="ui-layer">
         <div class="ad-strip top">
-            <script> atOptions = { 'key' : '04160f66b3308e7b2ef3b7cbde435a66', 'format' : 'iframe', 'height' : 50, 'width' : 320, 'params' : {} }; </script>
-            <script src="https://www.highperformanceformat.com/04160f66b3308e7b2ef3b7cbde435a66/invoke.js"></script>
+            <span style="color:#555; font-size:0.8rem">Sponsored</span>
         </div>
 
         <div class="side-panel" id="panel">
@@ -107,9 +143,31 @@
 
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzCFXQdHH4hsx89kISK2ZV9VmzadqKeju5vd9rsCLnREs-ySWXDFM6p0OYLWr8Xe6_ImQ/exec"; 
 
-        function hideLoader() {
-            const l = document.getElementById('loader-overlay');
-            if(l) { l.style.opacity = 0; setTimeout(() => l.style.display = 'none', 500); }
+        // --- COUNTDOWN LOGIC ---
+        function triggerCountdown() {
+            const txt = document.getElementById('loader-text');
+            const overlay = document.getElementById('loader-overlay');
+            
+            // Start Countdown
+            let count = 3;
+            txt.style.fontSize = "4rem"; // Make text big
+            txt.style.color = "#ffd700";
+            txt.innerText = count;
+
+            const timer = setInterval(() => {
+                count--;
+                if(count > 0) {
+                    txt.innerText = count;
+                } else {
+                    clearInterval(timer);
+                    txt.innerText = "1";
+                    // Wait a moment on '1', then fade
+                    setTimeout(() => {
+                        overlay.style.opacity = 0;
+                        setTimeout(() => overlay.style.display = 'none', 500);
+                    }, 800);
+                }
+            }, 800); // 800ms per number
         }
 
         /* --- 3D SETUP --- */
@@ -127,14 +185,12 @@
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true; controls.enablePan = false; controls.maxDistance = 40; controls.minDistance = 10; controls.autoRotate = true; controls.autoRotateSpeed = 0.8;
 
-        // --- UPDATED GLOW SETTINGS (LESS BRIGHT) ---
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
         
+        // --- GLOW (Low Brightness) ---
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        // Changed threshold from 0 to 0.2 (Ignores photo pixels)
         bloomPass.threshold = 0.2; 
-        // Changed strength from 1.2 to 0.6 (Softer glow)
         bloomPass.strength = 0.6; 
         bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
@@ -167,7 +223,8 @@
                 checkForSharedWish(uid);
             } else {
                 update3DText("Someone"); 
-                hideLoader();
+                // No shared wish, start countdown immediately
+                triggerCountdown();
             }
         });
 
@@ -192,6 +249,7 @@
         function animate() {
             requestAnimationFrame(animate); controls.update();
             const t = clock.getElapsedTime();
+            // Faster Animation
             frameGroup.position.y = Math.sin(t * 2.5) * 0.5; 
             textGroup.position.y = Math.sin((t * 2.5) + 1) * 0.5;
             
@@ -300,14 +358,15 @@
                     if(data.image) {
                         new THREE.TextureLoader().load(data.image, (tex) => {
                              applyTexture(tex);
-                             hideLoader();
-                        }, undefined, () => hideLoader());
-                    } else { hideLoader(); }
-                } else { hideLoader(); }
+                             triggerCountdown(); // IMAGE LOADED -> START 3, 2, 1
+                        }, undefined, () => triggerCountdown());
+                    } else { triggerCountdown(); }
+                } else { triggerCountdown(); }
             })
-            .catch(() => hideLoader());
+            .catch(() => triggerCountdown());
             
-            setTimeout(hideLoader, 8000);
+            // Safety timeout: if google script hangs, start countdown after 8s anyway
+            setTimeout(triggerCountdown, 8000);
         }
 
         function update3DText(name) {

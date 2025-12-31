@@ -37,7 +37,7 @@
             margin: 10px 0;
             z-index: 10;
             background: rgba(255, 255, 255, 0.05);
-            min-height: 60px; /* Reserves space for the ad */
+            min-height: 60px;
             overflow: hidden;
         }
 
@@ -70,7 +70,7 @@
             border: 4px solid #00d2ff;
             box-shadow: 0 0 20px #00d2ff;
             margin: 0 auto 20px;
-            display: none; /* Hidden by default */
+            display: none; 
             background-color: #222;
         }
 
@@ -84,7 +84,6 @@
             font-size: 4rem;
             font-weight: 900;
             color: transparent;
-            /* 3D Stroke Effect */
             -webkit-text-stroke: 2px #00d2ff;
             background: linear-gradient(90deg, #ff00cc, #333399, #00d2ff);
             background-clip: text;
@@ -131,9 +130,7 @@
         }
 
         /* File Input Styling */
-        input[type="file"] {
-            display: none;
-        }
+        input[type="file"] { display: none; }
         .file-label {
             display: inline-block;
             padding: 10px 20px;
@@ -181,14 +178,12 @@
             box-shadow: 0 0 15px #ff00cc;
         }
 
-        .btn:active {
-            transform: scale(0.95);
-        }
-        
+        .btn:active { transform: scale(0.95); }
         .btn:disabled {
             background: #555;
             box-shadow: none;
             cursor: not-allowed;
+            opacity: 0.7;
         }
 
         /* --- Footer --- */
@@ -213,7 +208,6 @@
             100% { opacity: 0.8; }
         }
 
-        /* Mobile Adjustments */
         @media (max-width: 480px) {
             .year-3d { font-size: 3rem; }
             .happy-text { font-size: 2rem; }
@@ -241,7 +235,6 @@
         <img id="senderPhoto" class="user-photo-display" alt="Surprise Photo">
 
         <h3 class="wishing-text" id="wishing-header">Welcome!</h3>
-
         <h1 class="happy-text">Happy New Year</h1>
         
         <div class="year-container">
@@ -255,9 +248,9 @@
             <input type="text" id="userName" placeholder="Your Name...">
             
             <label for="userFile" class="file-label" id="fileLabel">📷 Add Photo (Optional)</label>
-            <input type="file" id="userFile" accept="image/*" onchange="previewFile()">
+            <input type="file" id="userFile" accept="image/*" onchange="handleFileSelect()">
             
-            <button class="btn btn-whatsapp" id="shareBtn" onclick="handleShareLogic()">Share on WhatsApp 🚀</button>
+            <button class="btn btn-whatsapp" id="shareBtn" onclick="mainButtonLogic()">Share on WhatsApp 🚀</button>
             <p id="statusMsg" style="font-size:0.8rem; color:#00d2ff; margin-top:5px; height:20px;"></p>
         </div>
     </div>
@@ -293,21 +286,23 @@
         /* =========================================
            CONFIGURATION
            ========================================= */
-        // PASTE YOUR GOOGLE WEB APP URL HERE
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWv-u5OcGPfLmklAHJmT_kdtltmiPv2T8UJ3AMzglkBwQ3auhizbeDpBSK2zmRApxeaQ/exec"; 
         
         /* =========================================
            1. LOGIC FOR NAME, PHOTO & SHARING
            ========================================= */
         
-        // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const senderName = urlParams.get('n');
         const photoId = urlParams.get('p');
-
-        // Elements
         const wishHeader = document.getElementById('wishing-header');
         const photoDisplay = document.getElementById('senderPhoto');
+        const shareBtn = document.getElementById("shareBtn");
+        const statusMsg = document.getElementById("statusMsg");
+        const fileInput = document.getElementById("userFile");
+
+        // Global variable to store uploaded ID
+        let uploadedFileId = null;
 
         // 1a. Display Incoming Wish
         if (senderName) {
@@ -321,99 +316,118 @@
         // 1b. Display Incoming Photo
         if (photoId) {
             photoDisplay.style.display = 'block';
-            // Reliable Public Google Drive Link
             photoDisplay.src = `https://drive.google.com/uc?export=view&id=${photoId}`;
         }
 
-        // 1c. File Selection Preview
-        function previewFile() {
-            const fileInput = document.getElementById('userFile');
+        // 1c. File Selection & Button Reset
+        function handleFileSelect() {
             const fileLabel = document.getElementById('fileLabel');
             if (fileInput.files.length > 0) {
                 fileLabel.innerHTML = "✅ Photo Selected";
                 fileLabel.style.background = "#25D366";
                 fileLabel.style.color = "#fff";
-                fileLabel.style.borderColor = "#25D366";
+                
+                // If user changes photo, we must reset the upload status
+                uploadedFileId = null;
+                shareBtn.innerText = "Upload & Share 🚀";
+                shareBtn.style.background = "#25D366";
             }
         }
 
-        // 1d. Handle Sharing (Upload & WhatsApp)
-        async function handleShareLogic() {
-            const nameInput = document.getElementById("userName");
-            const fileInput = document.getElementById("userFile");
-            const shareBtn = document.getElementById("shareBtn");
-            const statusMsg = document.getElementById("statusMsg");
-            
-            var name = nameInput.value.trim();
-            
+        // 1d. MAIN LOGIC CONTROLLER
+        async function mainButtonLogic() {
+            var name = document.getElementById("userName").value.trim();
             if(name === "") {
                 alert("Please enter your name first!");
-                nameInput.focus();
+                document.getElementById("userName").focus();
                 return;
             }
 
-            // --- SCENARIO 1: Photo Selected (Upload Required) ---
+            // CHECK: Is there a file selected?
             if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                
-                // Limit size to ~4MB to be safe with Google Script limits
-                if (file.size > 4 * 1024 * 1024) {
-                    alert("File too large! Please pick a photo under 4MB.");
-                    return;
+                // Yes file. Has it been uploaded yet?
+                if (uploadedFileId) {
+                    // ALREADY UPLOADED -> Open WhatsApp
+                    openWhatsAppApp(name, uploadedFileId);
+                } else {
+                    // NOT UPLOADED -> Start Upload
+                    performUpload(name);
                 }
-
-                shareBtn.disabled = true;
-                shareBtn.innerHTML = "Uploading... <span id='loader'>⏳</span>";
-                statusMsg.innerText = "Please wait, uploading to cloud...";
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const base64Data = e.target.result.split(',')[1];
-                    
-                    const payload = {
-                        name: name,
-                        image: base64Data,
-                        mimeType: file.type
-                    };
-
-                    // FIXED: Use text/plain to avoid CORS preflight errors
-                    fetch(WEB_APP_URL, {
-                        method: "POST",
-                        redirect: "follow",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        console.log("Upload Success:", data);
-                        if(data.result === "success") {
-                            createLinkAndShare(name, data.fileId);
-                        } else {
-                            // Fallback if script returns error
-                            createLinkAndShare(name, "");
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Upload Error:", err);
-                        alert("Network issue. Sharing name only.");
-                        createLinkAndShare(name, "");
-                    })
-                    .finally(() => {
-                        shareBtn.disabled = false;
-                        shareBtn.innerText = "Share on WhatsApp 🚀";
-                        statusMsg.innerText = "";
-                    });
-                };
-                reader.readAsDataURL(file);
-
             } else {
-                // --- SCENARIO 2: No Photo (Instant Share) ---
-                createLinkAndShare(name, "");
+                // No file selected -> Open WhatsApp directly
+                openWhatsAppApp(name, "");
             }
         }
 
-        // 1e. Generate Link and Open WhatsApp
-        function createLinkAndShare(name, fileId) {
+        // 1e. Upload Function
+        function performUpload(name) {
+            const file = fileInput.files[0];
+            
+            // Limit size (4MB)
+            if (file.size > 4 * 1024 * 1024) {
+                alert("File too large! Max 4MB.");
+                return;
+            }
+
+            // UI Changes
+            shareBtn.disabled = true;
+            shareBtn.innerText = "Uploading... ⏳";
+            shareBtn.style.background = "#555";
+            statusMsg.innerText = "Please wait... Uploading to Cloud";
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result.split(',')[1];
+                
+                const payload = {
+                    name: name,
+                    image: base64Data,
+                    mimeType: file.type
+                };
+
+                fetch(WEB_APP_URL, {
+                    method: "POST",
+                    redirect: "follow",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Upload Success:", data);
+                    if(data.result === "success") {
+                        // SUCCESS: Store ID and Change Button
+                        uploadedFileId = data.fileId;
+                        
+                        shareBtn.innerText = "Open WhatsApp Now 📲";
+                        shareBtn.style.background = "#25D366"; // WhatsApp Green
+                        shareBtn.disabled = false;
+                        
+                        statusMsg.innerText = "✅ Upload Complete! Click button above.";
+                    } else {
+                        // Error on Server
+                        alert("Upload failed. Sharing name only.");
+                        openWhatsAppApp(name, "");
+                        resetButton();
+                    }
+                })
+                .catch(err => {
+                    console.error("Upload Error:", err);
+                    alert("Network Error. Sharing name only.");
+                    openWhatsAppApp(name, "");
+                    resetButton();
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetButton() {
+            shareBtn.disabled = false;
+            shareBtn.innerText = "Share on WhatsApp 🚀";
+            statusMsg.innerText = "";
+        }
+
+        // 1f. Generate Link & FORCE APP OPEN
+        function openWhatsAppApp(name, fileId) {
             var baseUrl = window.location.href.split('?')[0];
             var finalLink = `${baseUrl}?n=${encodeURIComponent(name)}`;
             
@@ -422,7 +436,10 @@
             }
 
             var message = `*${name}* sent you a special 3D Surprise for New Year 2026! 🎆%0A%0A👇 Touch this blue line 👇%0A${finalLink}`;
-            window.open(`whatsapp://send?text=${message}`, '_blank');
+            
+            // FORCE APP OPEN using whatsapp:// protocol
+            // This avoids opening the browser logic on mobile
+            window.location.href = `whatsapp://send?text=${message}`;
         }
 
         /* =========================================
@@ -445,7 +462,7 @@
         }
 
         /* =========================================
-           3. FIREWORKS EFFECT (Standard Canvas)
+           3. FIREWORKS EFFECT
            ========================================= */
         window.requestAnimFrame = (function() {
             return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || function(callback) {
